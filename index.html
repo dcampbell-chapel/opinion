@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI in Education: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Warm Neutral Harmony" -->
+    <!-- Application Structure Plan: The application is designed as a single-page exploratory dashboard. It starts with a main title and an introduction. The core of the app is a three-column layout, one for each stance. A central interactive chart visualizes the core tenets of each stance, allowing for direct comparison. Below the main columns, a "Key Arguments" section uses interactive buttons to highlight and display specific arguments (e.g., "Personalized Learning," "Algorithmic Bias") across all three viewpoints. A new feature has been added: within each stance card, a button powered by the Gemini API can generate a new, synthesized argument for that specific perspective. This structure was chosen to move beyond a simple linear reading of the report and to encourage users to actively compare and contrast the arguments on a thematic level and to dynamically generate new content, fostering a deeper understanding of the nuances in the debate. The user flow is: Introduction -> Explore Stances Side-by-Side -> Analyze Core Tenets via Chart -> Deep Dive into Key Arguments -> Generate new arguments with AI. -->
+    <!-- Visualization & Content Choices: 
+        1. Stance Comparison Chart: Goal: Compare the core focus of each stance. Viz/Method: A polar area chart (Chart.js/Canvas). Interaction: On hover, tooltips provide a summary of each stance's main argument. Justification: A polar area chart provides a compelling "spider-web" visual that quickly communicates the overall philosophical shape and priorities of each viewpoint simultaneously, making it excellent for high-level comparison.
+        2. Key Arguments Section: Goal: Allow users to analyze specific, recurring arguments across all three stances. Viz/Method: A set of interactive buttons (HTML/CSS/JS) that, when clicked, reveal corresponding text blocks under each stance's column. Interaction: Clicking an argument button (e.g., "Data Privacy") highlights the button and displays only the relevant text excerpts from each stance, dimming the others. Justification: This interactive filtering mechanism enables users to trace a single concept through the different ideological lenses, which is more powerful for synthesis than reading each column in isolation.
+        3. Stance Cards: Goal: Clearly present each stance's viewpoint. Viz/Method: Styled text blocks within a three-column grid (HTML/Tailwind) with a new button for AI content generation. Interaction: The content within these cards is dynamically updated by the "Key Arguments" interaction, and a new "✨ Synthesize Argument" button triggers an API call to generate new content. Justification: This provides a clean, organized, and responsive way to display the core textual content from the report, now with a powerful generative capability.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm Neutral: Off-White */
+        }
+        .font-lora {
+            font-family: 'Lora', serif;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAE6E1; /* Warm Neutral: Light Taupe */
+            transition: all 0.3s ease-in-out;
+        }
+        .argument-button {
+            transition: all 0.3s ease-in-out;
+            background-color: #F4F1ED; /* Warm Neutral: Pale Taupe */
+            color: #5D534A; /* Warm Neutral: Deep Brown */
+            border: 1px solid #EAE6E1;
+        }
+        .argument-button.active {
+            background-color: #A4958A; /* Accent: Muted Sage */
+            color: #FFFFFF;
+            border-color: #A4958A;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .argument-content {
+            display: none;
+            border-left: 3px solid #D4CCC3; /* Warm Neutral: Mid Taupe */
+            padding-left: 1rem;
+            margin-top: 1rem;
+        }
+        .argument-content.visible {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 500px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                max-width: 600px;
+                height: 500px;
+            }
+        }
+        .gemini-button {
+            background-color: #5D534A;
+            color: #FFFFFF;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease-in-out;
+        }
+        .gemini-button:hover {
+            background-color: #3C3633;
+            transform: translateY(-1px);
+        }
+        .gemini-button:disabled {
+            background-color: #D4CCC3;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .gemini-result {
+            background-color: #F4F1ED;
+            border: 1px solid #EAE6E1;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+        .opinion-column {
+            background-color: #F8F6F4;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 1.5rem;
+            border: 1px solid #EAE6E1;
+        }
+        .read-more-button {
+            background-color: transparent;
+            color: #5D534A;
+            font-weight: 600;
+            text-decoration: underline;
+            padding: 0;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold font-lora text-[#3C3633] mb-4">The Future of AI in Education</h1>
+            <p class="text-lg text-[#5D534A] max-w-3xl mx-auto">
+                The integration of Artificial Intelligence into our classrooms is a complex issue with passionate arguments on all sides. This interactive report breaks down the three primary stances—Embrace, Regulate, and Oppose—to help you understand the core of the debate. Explore the chart and click the key arguments to compare perspectives.
+            </p>
+        </header>
+
+        <section id="comparison-chart" class="mb-20">
+             <h2 class="text-3xl font-bold font-lora text-center text-[#3C3633] mb-6">A Visual Comparison of Stances</h2>
+             <p class="text-center text-[#5D534A] mb-8 max-w-2xl mx-auto">This chart visualizes the philosophical priorities of each stance. A larger segment indicates a stronger focus on that particular value. Hover over a segment to see how each perspective scores on that dimension.</p>
+            <div class="chart-container">
+                <canvas id="stancesChart"></canvas>
+            </div>
+        </section>
+
+        <section id="key-arguments" class="text-center mb-12">
+            <h2 class="text-3xl font-bold font-lora text-[#3C3633] mb-6">Explore Key Arguments</h2>
+            <p class="text-center text-[#5D534A] mb-8 max-w-2xl mx-auto">Click on an argument below to isolate and compare how each stance addresses the topic. This allows you to see points of agreement and contention across the different viewpoints.</p>
+            <div id="argument-buttons-container" class="flex flex-wrap justify-center gap-3">
+                <button class="argument-button active font-semibold py-2 px-5 rounded-full" data-argument="all">Show All</button>
+                <button class="argument-button font-semibold py-2 px-5 rounded-full" data-argument="personalization">🎓 Personalized Learning</button>
+                <button class="argument-button font-semibold py-2 px-5 rounded-full" data-argument="bias">⚖️ Algorithmic Bias</button>
+                <button class="argument-button font-semibold py-2 px-5 rounded-full" data-argument="relationships">❤️ Human Relationships</button>
+                <button class="argument-button font-semibold py-2 px-5 rounded-full" data-argument="privacy">🔒 Data Privacy</button>
+            </div>
+        </section>
+
+        <main id="perspectives" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Stance 1 Column -->
+            <div class="card rounded-lg shadow-lg p-6">
+                <h3 class="font-lora text-2xl font-bold text-[#3C3633] mb-2">Stance 1: Embrace AI</h3>
+                <p class="font-semibold text-[#5D534A] mb-4">Focus: Modernization & Efficiency</p>
+                
+                <div id="stance-1-column" class="opinion-column">
+                    <h4 class="font-lora text-lg font-bold mb-2 text-[#3C3633]">The Real Educational Revolution Won't Be Taught, It Will Be Tuned</h4>
+                    <p class="text-sm italic text-[#5D534A] mb-4">By Ezra Klein</p>
+                    <div id="stance-1-text" class="full-article hidden">
+                        <p class="mb-4">The debate around AI in education often feels like a rerun of every other technology debate: a fight between starry-eyed optimists and doomsday skeptics. One side sees personalized learning nirvana, the other, a chilling, dehumanizing dystopia. But what if we’re asking the wrong questions? What if the real revolution isn't about what AI is, but about what it frees us to do?</p>
+                        <p class="mb-4">For decades, the factory model of education has persisted. One teacher, thirty students, one pace, one set of assignments. We accept this as normal, but it's fundamentally a logistical constraint, a historical artifact of an industrial age. It's a system that forces students with different needs, interests, and learning speeds into a single, rigid track. It's wildly inefficient and, frankly, a bit tragic.</p>
+                        <p class="mb-4">Now, we have a tool that can break this system. AI isn’t about replacing the teacher, but about augmenting their reach. An AI tutor can provide instantaneous, personalized feedback to all thirty students at once. An AI assistant can grade essays for basic grammar, freeing the teacher to focus on the nuance of a student’s argument. The teacher’s new role becomes less about being the sole purveyor of information and more about being a mentor, a guide, a human connection in a digital landscape.</p>
+                        <p class="mb-4">The fundamental question isn’t whether we should use AI, but how we design the new system. What new incentives can we build? How do we retrain our teachers? How do we move from a one-size-fits-all curriculum to one that is truly dynamic and student-centric? The true promise of AI isn't in a new gadget, but in the possibility of finally dismantling an old, broken system and building something better in its place.</p>
+                    </div>
+                    <button class="read-more-button" data-target="stance-1-text">Read More</button>
+                </div>
+
+                <div class="space-y-4 text-gray-700 mt-6">
+                    <div class="argument-content visible" data-argument-content="personalization">
+                        <p><strong>Personalized Learning:</strong> AI-driven platforms can tailor the pace, content, and teaching methods to each student’s unique needs and learning style, moving away from a one-size-fits-all model.</p>
+                    </div>
+                     <div class="argument-content visible" data-argument-content="bias">
+                        <p><strong>Algorithmic Bias:</strong> This perspective acknowledges the need for well-designed systems but focuses on AI's potential to offer objective, data-driven insights that can help overcome human biases in traditional classrooms.</p>
+                    </div>
+                    <div class="argument-content visible" data-argument-content="relationships">
+                        <p><strong>Human Relationships:</strong> By automating administrative tasks, AI frees up valuable time for teachers to engage in more meaningful, one-on-one interactions, mentorship, and emotional support.</p>
+                    </div>
+                     <div class="argument-content visible" data-argument-content="privacy">
+                        <p><strong>Data Privacy:</strong> Proponents argue that with proper technical safeguards and policies, data can be used securely to generate insights that dramatically improve educational outcomes for students.</p>
+                    </div>
+                </div>
+                <div class="mt-8 pt-4 border-t border-EAE6E1">
+                    <button id="generate-stance-1" class="gemini-button">✨ Synthesize Argument</button>
+                    <div id="stance-1-result" class="gemini-result hidden"></div>
+                </div>
+            </div>
+
+            <!-- Stance 2 Column -->
+            <div class="card rounded-lg shadow-lg p-6">
+                <h3 class="font-lora text-2xl font-bold text-[#3C3633] mb-2">Stance 2: Regulate AI</h3>
+                <p class="font-semibold text-[#5D534A] mb-4">Focus: Caution & Ethical Oversight</p>
+
+                <div id="stance-2-column" class="opinion-column">
+                    <h4 class="font-lora text-lg font-bold mb-2 text-[#3C3633]">Before We Trust AI with Our Children, Let’s Talk About What We’re Forgetting</h4>
+                    <p class="text-sm italic text-[#5D534A] mb-4">By Nicholas Kristof</p>
+                    <div id="stance-2-text" class="full-article hidden">
+                        <p class="mb-4">There’s a shiny new object in the classroom, and its name is AI. We hear grand promises of personalized learning, of an education system finally liberated from the constraints of the old. But as I’ve seen time and again, technological progress is not a neutral force. It is a mirror, reflecting our society’s deepest flaws, and in education, those flaws are a chasm of inequality.</p>
+                        <p class="mb-4">Take the case of a student I'll call Maria. She lives in a rural community where internet access is spotty at best. Her school is underfunded, and the promise of a sophisticated AI-powered tutor is as distant as a star. Meanwhile, a student like Jason, in a wealthy suburban district, has access to the latest AI tools that adapt to his every need. The digital divide, a gap we’ve tried for years to close, is now poised to become a crater, with AI as the shovel.</p>
+                        <p class="mb-4">And then there's the insidious problem of algorithmic bias. AI models are trained on data, and if that data is skewed, the AI will be too. We’re already seeing this in studies that show AI systems disproportionately flagging essays from non-native English speakers as AI-generated, or identifying students from marginalized communities as "at-risk." We are building a system that could embed and amplify our unconscious biases, cementing a cycle of unfairness under the guise of objective technology.</p>
+                        <p class="mb-4">Before we fully embrace this new frontier, we must demand accountability. We must regulate these systems, audit them for bias, and ensure that the privacy of our children's data is protected. We must not be so dazzled by the promise of progress that we forget the human cost of leaving the most vulnerable behind.</p>
+                    </div>
+                    <button class="read-more-button" data-target="stance-2-text">Read More</button>
+                </div>
+
+                <div class="space-y-4 text-gray-700 mt-6">
+                    <div class="argument-content visible" data-argument-content="personalization">
+                        <p><strong>Personalized Learning:</strong> While acknowledging the potential benefits, this stance warns that personalization could exacerbate the digital divide if not implemented equitably across all schools.</p>
+                    </div>
+                     <div class="argument-content visible" data-argument-content="bias">
+                        <p><strong>Algorithmic Bias:</strong> A primary concern is that AI models, trained on biased historical data, will perpetuate and even amplify inequitable outcomes for students from marginalized backgrounds.</p>
+                    </div>
+                    <div class="argument-content visible" data-argument-content="relationships">
+                        <p><strong>Human Relationships:</strong> The focus is less on the teacher-student relationship and more on the relationship between the student and the system, emphasizing the need for fairness and transparency in AI-driven decisions.</p>
+                    </div>
+                     <div class="argument-content visible" data-argument-content="privacy">
+                        <p><strong>Data Privacy:</strong> This is a central argument. The stance raises serious concerns about the mass collection of student data, its vulnerability to breaches, and its use without informed consent.</p>
+                    </div>
+                </div>
+                <div class="mt-8 pt-4 border-t border-EAE6E1">
+                    <button id="generate-stance-2" class="gemini-button">✨ Synthesize Argument</button>
+                    <div id="stance-2-result" class="gemini-result hidden"></div>
+                </div>
+            </div>
+
+            <!-- Stance 3 Column -->
+            <div class="card rounded-lg shadow-lg p-6">
+                <h3 class="font-lora text-2xl font-bold text-[#3C3633] mb-2">Stance 3: Oppose AI</h3>
+                <p class="font-semibold text-[#5D534A] mb-4">Focus: Human-Centric Learning</p>
+
+                <div id="stance-3-column" class="opinion-column">
+                    <h4 class="font-lora text-lg font-bold mb-2 text-[#3C3633]">My Teacher, My Algorithm</h4>
+                    <p class="text-sm italic text-[#5D534A] mb-4">By Maureen Dowd</p>
+                    <div id="stance-3-text" class="full-article hidden">
+                        <p class="mb-4">A funny thing is happening on the way to the educational utopia. We're so busy celebrating the efficiency of the new, we've forgotten what made the old so great. The promise is a digital tutor who knows your every weak spot, who can grade your paper faster than you can write "Dear God, help me." The reality? We’re trading Shakespeare for spreadsheets and Socrates for software updates.</p>
+                        <p class="mb-4">Soon, the classroom won’t be a place of intellectual struggle and human connection, but a sterile lab of optimized outcomes. Your child will no longer look to a teacher for inspiration, for that spark of a beautiful idea, or for a kind word after a rough day. They will look to a screen. The teacher, once a guide and a mentor, will be relegated to a classroom manager, a glorified IT support specialist for a herd of plugged-in zombies.</p>
+                        <p class="mb-4">The very essence of learning—the messy, beautiful, human act of grappling with a difficult text, of wrestling with a new idea, of the shared discovery between a student and a teacher—is being declared inefficient. We're telling students that the only valuable learning is that which can be measured, quantified, and turned into a data point for a dashboard. The non-quantifiable stuff, the moments of true insight, the joy of a genuine conversation? All non-billable hours in the new educational economy.</p>
+                        <p class="mb-4">Let’s be honest. This isn’t a revolution. It’s a tragedy dressed up as progress. We're handing over the intellectual and emotional development of our children to an algorithm, and then we're surprised when they don't seem to have a soul. You can’t put a price on the look in a child’s eyes when a teacher truly connects with them, and you can’t program it, either. That’s a lesson no AI can teach.</p>
+                    </div>
+                    <button class="read-more-button" data-target="stance-3-text">Read More</button>
+                </div>
+                
+                <div class="space-y-4 text-gray-700 mt-6">
+                     <div class="argument-content visible" data-argument-content="personalization">
+                        <p><strong>Personalized Learning:</strong> This view is skeptical of algorithmic personalization, arguing it devalues critical thinking and originality by making it easier for students to complete assignments without genuine thought.</p>
+                    </div>
+                     <div class="argument-content visible" data-argument-content="bias">
+                        <p><strong>Algorithmic Bias:</strong> The argument here is broader, suggesting that a focus on quantifiable metrics and data-driven results inherently discriminates against creativity, curiosity, and holistic development.</p>
+                    </div>
+                    <div class="argument-content visible" data-argument-content="relationships">
+                        <p><strong>Human Relationships:</strong> This is the core of the opposition. It argues that AI cannot replicate the empathy and mentorship of a human teacher, and over-reliance on tech erodes this essential bond.</p>
+                    </div>
+                    <div class="argument-content visible" data-argument-content="privacy">
+                        <p><strong>Data Privacy:</strong> The concern is less about security and more philosophical, arguing that reducing the rich process of education to a series of data points is fundamentally dehumanizing.</p>
+                    </div>
+                </div>
+                <div class="mt-8 pt-4 border-t border-EAE6E1">
+                    <button id="generate-stance-3" class="gemini-button">✨ Synthesize Argument</button>
+                    <div id="stance-3-result" class="gemini-result hidden"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const data = {
+                labels: ['Efficiency & Progress', 'Equity & Fairness', 'Human Connection', 'Data & Privacy'],
+                datasets: [{
+                    label: 'Stance 1: Embrace',
+                    data: [9, 6, 7, 7],
+                    backgroundColor: 'rgba(164, 149, 138, 0.7)',
+                    borderColor: 'rgba(164, 149, 138, 1)',
+                }, {
+                    label: 'Stance 2: Regulate',
+                    data: [4, 9, 5, 9],
+                    backgroundColor: 'rgba(93, 83, 74, 0.7)',
+                    borderColor: 'rgba(93, 83, 74, 1)',
+                }, {
+                    label: 'Stance 3: Oppose',
+                    data: [2, 5, 9, 4],
+                    backgroundColor: 'rgba(212, 204, 195, 0.7)',
+                    borderColor: 'rgba(212, 204, 195, 1)',
+                }]
+            };
+
+            const config = {
+                type: 'polarArea',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            pointLabels: {
+                                display: true,
+                                centerPointLabels: true,
+                                font: {
+                                    size: 14,
+                                    family: "'Inter', sans-serif",
+                                    weight: '600'
+                                },
+                                color: '#3C3633'
+                            },
+                            ticks: {
+                                display: false,
+                                backdropColor: 'transparent'
+                            },
+                            grid: {
+                                color: '#EAE6E1'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#3C3633',
+                                font: { family: "'Inter', sans-serif", size: 14, weight: '600' },
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#3C3633',
+                            titleFont: { size: 14, weight: 'bold', family: "'Lora', serif" },
+                            bodyFont: { size: 12, family: "'Inter', sans-serif" },
+                            bodySpacing: 4,
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.r !== null) {
+                                        label += `Emphasis Score of ${context.parsed.r} out of 10`;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            const stancesChart = new Chart(
+                document.getElementById('stancesChart'),
+                config
+            );
+
+            const argumentButtonsContainer = document.getElementById('argument-buttons-container');
+            const argumentContents = document.querySelectorAll('[data-argument-content]');
+
+            argumentButtonsContainer.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') return;
+
+                const selectedArgument = e.target.dataset.argument;
+
+                argumentButtonsContainer.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+
+                argumentContents.forEach(content => {
+                    if (selectedArgument === 'all' || content.dataset.argumentContent === selectedArgument) {
+                        content.classList.add('visible');
+                    } else {
+                        content.classList.remove('visible');
+                    }
+                });
+            });
+
+            // "Read More" button functionality
+            document.querySelectorAll('.read-more-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement.classList.contains('hidden')) {
+                        targetElement.classList.remove('hidden');
+                        button.textContent = 'Read Less';
+                    } else {
+                        targetElement.classList.add('hidden');
+                        button.textContent = 'Read More';
+                    }
+                });
+            });
+
+
+            // Gemini API Integration
+            const geminiApiCall = async (prompt, resultContainerId, button) => {
+                const resultContainer = document.getElementById(resultContainerId);
+                const originalButtonText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = 'Thinking...';
+                resultContainer.classList.remove('hidden');
+                resultContainer.innerHTML = '<p>Generating a new argument... please wait.</p>';
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                let response;
+                let retries = 0;
+                const maxRetries = 5;
+                const baseDelay = 1000;
+
+                while (retries < maxRetries) {
+                    try {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.status === 429) {
+                            retries++;
+                            const delay = baseDelay * Math.pow(2, retries);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(`API call failed with status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) {
+                            resultContainer.innerHTML = `<p>${text}</p>`;
+                        } else {
+                            throw new Error('Invalid API response structure');
+                        }
+                        break;
+
+                    } catch (error) {
+                        resultContainer.innerHTML = `<p>Error generating argument: ${error.message}</p>`;
+                        console.error('Error in Gemini API call:', error);
+                        break;
+                    } finally {
+                        button.disabled = false;
+                        button.innerHTML = originalButtonText;
+                    }
+                }
+            };
+
+            document.getElementById('generate-stance-1').addEventListener('click', () => {
+                const prompt = "Generate a new, short, single-paragraph argument supporting the 'Embrace AI' stance in education. The argument should focus on how AI-powered tools can create novel, collaborative learning experiences that were previously impossible, rather than just on efficiency.";
+                geminiApiCall(prompt, 'stance-1-result', document.getElementById('generate-stance-1'));
+            });
+
+            document.getElementById('generate-stance-2').addEventListener('click', () => {
+                const prompt = "Generate a new, short, single-paragraph argument supporting the 'Regulate AI' stance in education. The argument should focus on the need for transparent, open-source AI models in education to allow for public scrutiny and prevent corporate capture of the curriculum.";
+                geminiApiCall(prompt, 'stance-2-result', document.getElementById('generate-stance-2'));
+            });
+
+            document.getElementById('generate-stance-3').addEventListener('click', () => {
+                const prompt = "Generate a new, short, single-paragraph argument supporting the 'Oppose AI' stance in education. The argument should focus on the psychological and social costs of replacing human interaction with algorithms, specifically regarding the development of empathy and critical social skills in students.";
+                geminiApiCall(prompt, 'stance-3-result', document.getElementById('generate-stance-3'));
+            });
+        });
+    </script>
+
+</body>
+</html>
