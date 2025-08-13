@@ -10,11 +10,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <!-- Chosen Palette: "Warm Neutral Harmony" -->
-    <!-- Application Structure Plan: The application is designed as a single-page exploratory dashboard. It starts with a main title and an introduction. The core of the app is a three-column layout, one for each stance. A central interactive chart visualizes the core tenets of each stance, allowing for direct comparison. Below the main columns, a "Key Arguments" section uses interactive buttons to highlight and display specific arguments (e.g., "Personalized Learning," "Algorithmic Bias") across all three viewpoints. A new feature has been added: within each stance card, a button powered by the Gemini API can generate a new, synthesized argument for that specific perspective. This structure was chosen to move beyond a simple linear reading of the report and to encourage users to actively compare and contrast the arguments on a thematic level and to dynamically generate new content, fostering a deeper understanding of the nuances in the debate. The user flow is: Introduction -> Explore Stances Side-by-Side -> Analyze Core Tenets via Chart -> Deep Dive into Key Arguments -> Generate new arguments with AI. -->
+    <!-- Application Structure Plan: The application is designed as a single-page exploratory dashboard. It starts with a main title and an an introduction. The core of the app is a three-column layout, one for each stance. A central interactive chart visualizes the core tenets of each stance, allowing for direct comparison. Below the main columns, a "Key Arguments" section uses interactive buttons to highlight and display specific arguments (e.g., "Personalized Learning," "Algorithmic Bias") across all three viewpoints. This structure was chosen to move beyond a simple linear reading of the report and to encourage users to actively compare and contrast the arguments on a thematic level, fostering a deeper understanding of the nuances in the debate. The user flow is: Introduction -> Explore Stances Side-by-Side -> Analyze Core Tenets via Chart -> Deep Dive into Key Arguments. -->
     <!-- Visualization & Content Choices: 
-        1. Stance Comparison Chart: Goal: Compare the core focus of each stance. Viz/Method: A polar area chart (Chart.js/Canvas). Interaction: On hover, tooltips provide a summary of each stance's main argument. Justification: A polar area chart provides a compelling "spider-web" visual that quickly communicates the overall philosophical shape and priorities of each viewpoint simultaneously, making it excellent for high-level comparison.
+        1. Stance Comparison Chart: Goal: Compare the core focus of each stance. Viz/Method: A polar area chart (Chart.js/Canvas). Interaction: On hover, tooltips provide a summary of each stance's main argument. Justification: A polar area chart provides a compelling "spider-web" visual that quickly communicates the overall philosophical shape and priorities of each viewpoint simultaneously, making it excellent for high-level comparison. The colors have been updated to be more distinct as requested.
         2. Key Arguments Section: Goal: Allow users to analyze specific, recurring arguments across all three stances. Viz/Method: A set of interactive buttons (HTML/CSS/JS) that, when clicked, reveal corresponding text blocks under each stance's column. Interaction: Clicking an argument button (e.g., "Data Privacy") highlights the button and displays only the relevant text excerpts from each stance, dimming the others. Justification: This interactive filtering mechanism enables users to trace a single concept through the different ideological lenses, which is more powerful for synthesis than reading each column in isolation.
-        3. Stance Cards: Goal: Clearly present each stance's viewpoint. Viz/Method: Styled text blocks within a three-column grid (HTML/Tailwind) with a new button for AI content generation. Interaction: The content within these cards is dynamically updated by the "Key Arguments" interaction, and a new "✨ Synthesize Argument" button triggers an API call to generate new content. Justification: This provides a clean, organized, and responsive way to display the core textual content from the report, now with a powerful generative capability.
+        3. Stance Cards: Goal: Clearly present each stance's viewpoint. Viz/Method: Styled text blocks within a three-column grid (HTML/Tailwind). Interaction: The content within these cards is dynamically updated by the "Key Arguments" interaction. Justification: This provides a clean, organized, and responsive way to display the core textual content from the report.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -66,33 +66,6 @@
                 max-width: 600px;
                 height: 500px;
             }
-        }
-        .gemini-button {
-            background-color: #5D534A;
-            color: #FFFFFF;
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.2s ease-in-out;
-        }
-        .gemini-button:hover {
-            background-color: #3C3633;
-            transform: translateY(-1px);
-        }
-        .gemini-button:disabled {
-            background-color: #D4CCC3;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .gemini-result {
-            background-color: #F4F1ED;
-            border: 1px solid #EAE6E1;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-top: 1rem;
-            font-style: italic;
         }
         .opinion-column {
             background-color: #F8F6F4;
@@ -174,10 +147,6 @@
                         <p><strong>Data Privacy:</strong> Proponents argue that with proper technical safeguards and policies, data can be used securely to generate insights that dramatically improve educational outcomes for students.</p>
                     </div>
                 </div>
-                <div class="mt-8 pt-4 border-t border-EAE6E1">
-                    <button id="generate-stance-1" class="gemini-button">✨ Synthesize Argument</button>
-                    <div id="stance-1-result" class="gemini-result hidden"></div>
-                </div>
             </div>
 
             <!-- Stance 2 Column -->
@@ -210,10 +179,6 @@
                      <div class="argument-content visible" data-argument-content="privacy">
                         <p><strong>Data Privacy:</strong> This is a central argument. The stance raises serious concerns about the mass collection of student data, its vulnerability to breaches, and its use without informed consent.</p>
                     </div>
-                </div>
-                <div class="mt-8 pt-4 border-t border-EAE6E1">
-                    <button id="generate-stance-2" class="gemini-button">✨ Synthesize Argument</button>
-                    <div id="stance-2-result" class="gemini-result hidden"></div>
                 </div>
             </div>
 
@@ -248,10 +213,6 @@
                         <p><strong>Data Privacy:</strong> The concern is less about security and more philosophical, arguing that reducing the rich process of education to a series of data points is fundamentally dehumanizing.</p>
                     </div>
                 </div>
-                <div class="mt-8 pt-4 border-t border-EAE6E1">
-                    <button id="generate-stance-3" class="gemini-button">✨ Synthesize Argument</button>
-                    <div id="stance-3-result" class="gemini-result hidden"></div>
-                </div>
             </div>
         </main>
     </div>
@@ -262,18 +223,18 @@
                 datasets: [{
                     label: 'Stance 1: Embrace',
                     data: [9, 6, 7, 7],
-                    backgroundColor: 'rgba(164, 149, 138, 0.7)',
-                    borderColor: 'rgba(164, 149, 138, 1)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
                 }, {
                     label: 'Stance 2: Regulate',
                     data: [4, 9, 5, 9],
-                    backgroundColor: 'rgba(93, 83, 74, 0.7)',
-                    borderColor: 'rgba(93, 83, 74, 1)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                    borderColor: 'rgba(34, 197, 94, 1)',
                 }, {
                     label: 'Stance 3: Oppose',
                     data: [2, 5, 9, 4],
-                    backgroundColor: 'rgba(212, 204, 195, 0.7)',
-                    borderColor: 'rgba(212, 204, 195, 1)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
                 }]
             };
 
@@ -376,81 +337,6 @@
                         button.textContent = 'Read More';
                     }
                 });
-            });
-
-
-            // Gemini API Integration
-            const geminiApiCall = async (prompt, resultContainerId, button) => {
-                const resultContainer = document.getElementById(resultContainerId);
-                const originalButtonText = button.innerHTML;
-                button.disabled = true;
-                button.innerHTML = 'Thinking...';
-                resultContainer.classList.remove('hidden');
-                resultContainer.innerHTML = '<p>Generating a new argument... please wait.</p>';
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                const apiKey = ""
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-                let response;
-                let retries = 0;
-                const maxRetries = 5;
-                const baseDelay = 1000;
-
-                while (retries < maxRetries) {
-                    try {
-                        response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (response.status === 429) {
-                            retries++;
-                            const delay = baseDelay * Math.pow(2, retries);
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            continue;
-                        }
-
-                        if (!response.ok) {
-                            throw new Error(`API call failed with status: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (text) {
-                            resultContainer.innerHTML = `<p>${text}</p>`;
-                        } else {
-                            throw new Error('Invalid API response structure');
-                        }
-                        break;
-
-                    } catch (error) {
-                        resultContainer.innerHTML = `<p>Error generating argument: ${error.message}</p>`;
-                        console.error('Error in Gemini API call:', error);
-                        break;
-                    } finally {
-                        button.disabled = false;
-                        button.innerHTML = originalButtonText;
-                    }
-                }
-            };
-
-            document.getElementById('generate-stance-1').addEventListener('click', () => {
-                const prompt = "Generate a new, short, single-paragraph argument supporting the 'Embrace AI' stance in education. The argument should focus on how AI-powered tools can create novel, collaborative learning experiences that were previously impossible, rather than just on efficiency.";
-                geminiApiCall(prompt, 'stance-1-result', document.getElementById('generate-stance-1'));
-            });
-
-            document.getElementById('generate-stance-2').addEventListener('click', () => {
-                const prompt = "Generate a new, short, single-paragraph argument supporting the 'Regulate AI' stance in education. The argument should focus on the need for transparent, open-source AI models in education to allow for public scrutiny and prevent corporate capture of the curriculum.";
-                geminiApiCall(prompt, 'stance-2-result', document.getElementById('generate-stance-2'));
-            });
-
-            document.getElementById('generate-stance-3').addEventListener('click', () => {
-                const prompt = "Generate a new, short, single-paragraph argument supporting the 'Oppose AI' stance in education. The argument should focus on the psychological and social costs of replacing human interaction with algorithms, specifically regarding the development of empathy and critical social skills in students.";
-                geminiApiCall(prompt, 'stance-3-result', document.getElementById('generate-stance-3'));
             });
         });
     </script>
